@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tof-prediction-adapter"
-version = "0.1.0"
+version = "0.1.1"
 description = "Advisory typed decisions and deterministic mathematics for TOF, over REST and MCP"
 requires-python = ">=3.12"
 dependencies = [

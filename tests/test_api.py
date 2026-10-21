@@ -450,9 +450,14 @@ async def test_laya_readiness_queries_upstream_without_redirects(status, expecte
         assert request.method == "GET"
         assert str(request.url) == "http://laya-inference:8080/health"
         assert request.headers["authorization"] == "Bearer laya-private-key"
-        return httpx.Response(
-            status, json={"status": "ok"}, headers={"Location": "https://attacker.example"}
-        )
+        health = {
+            "status": "ok",
+            "loaded": [],
+            "revisions": {},
+            "device": "cuda:0",
+            "checkpoint_devices": {},
+        }
+        return httpx.Response(status, json=health, headers={"Location": "https://attacker.example"})
 
     async with api(
         handler=handler, default_backend="laya", laya_api_key="laya-private-key"
@@ -461,6 +466,29 @@ async def test_laya_readiness_queries_upstream_without_redirects(status, expecte
     assert response.status_code == expected
     assert len(calls) == 1
     assert "laya-private-key" not in response.text
+
+
+async def test_laya_readiness_rejects_public_liveness_body_when_key_is_configured():
+    def handler(request):
+        assert request.headers["authorization"] == "Bearer wrong-laya-key"
+        # This is Laya's deliberate response to missing or invalid health auth.
+        return httpx.Response(200, json={"status": "ok"})
+
+    async with api(
+        handler=handler, default_backend="laya", laya_api_key="wrong-laya-key"
+    ) as client:
+        response = await client.get("/health/ready")
+    assert response.status_code == 503
+
+
+async def test_unkeyed_laya_accepts_public_health():
+    def handler(request):
+        assert "authorization" not in request.headers
+        return httpx.Response(200, json={"status": "ok"})
+
+    async with api(handler=handler, default_backend="laya", laya_api_key=None) as client:
+        response = await client.get("/health/ready")
+    assert response.status_code == 200
 
 
 async def test_readiness_failure_does_not_affect_liveness():

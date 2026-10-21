@@ -28,7 +28,9 @@ Use TLS at an ingress/reverse proxy before exposing beyond localhost or a truste
 
 ## Health and logs
 
-`/health/live` checks the process. `/health/ready` checks the configured default backend: Laya `/health`, Jev `/v1/models`, or explicit mock mode. It does not make a prediction or validate checkpoint quality. An unavailable optional backend does not change readiness for the selected default. The mathematical endpoints remain functional when an inference backend is unavailable.
+`/health/live` checks the process. `/health/ready` checks the configured default backend: Laya `/health`, Jev `/v1/models`, or explicit mock mode. When a Laya key is configured, readiness requires the authenticated detail fields rather than accepting Laya's intentionally public status-only liveness response; an empty `loaded` list remains ready because idle-unloaded checkpoints can reload on demand. It does not make a prediction or validate checkpoint quality. An unavailable optional backend does not change readiness for the selected default. The mathematical endpoints remain functional when an inference backend is unavailable.
+
+The TechOverFL V100 service currently uses `http://192.168.10.207:8084`. If the adapter runs on another machine, that HTTP hop carries the Laya bearer and request state without transport encryption; use an authenticated tunnel/TLS proxy or an explicitly trusted isolated network. The stock Kubernetes policy targets a same-namespace Laya pod on port 8080 and must not be applied unchanged for the bare-metal V100 endpoint.
 
 Structured request logs include only generated request ID, bounded operation label, HTTP status and duration. They omit state, arbitrary query strings, bearer tokens and raw upstream payloads. Metrics use bounded labels and never include caller IDs or user text. Protect `/metrics` using the service token. MCP errors are represented inside successful HTTP protocol responses; inspect MCP `isError`, not just HTTP status.
 

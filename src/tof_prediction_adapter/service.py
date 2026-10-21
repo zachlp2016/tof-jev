@@ -213,6 +213,29 @@ class PredictionService:
                     timeout=3,
                     follow_redirects=False,
                 ) as response:
-                    return response.status_code == 200
-        except (httpx.HTTPError, TimeoutError):
+                    if response.status_code != 200:
+                        return False
+                    if not local or key is None:
+                        return True
+
+                    # Locked-down Laya intentionally returns HTTP 200 with only
+                    # {"status":"ok"} to callers that fail authentication. A
+                    # readiness probe carrying a configured key must therefore
+                    # require fields that are present only in authenticated health.
+                    # ``loaded`` may legitimately be empty after idle unloading.
+                    body = bytearray()
+                    async for chunk in response.aiter_bytes(chunk_size=16_384):
+                        if len(body) + len(chunk) > 65_536:
+                            return False
+                        body.extend(chunk)
+                    health = json.loads(body.decode("utf-8"))
+                    return (
+                        isinstance(health, dict)
+                        and health.get("status") == "ok"
+                        and all(
+                            field in health
+                            for field in ("loaded", "revisions", "device", "checkpoint_devices")
+                        )
+                    )
+        except (httpx.HTTPError, TimeoutError, UnicodeDecodeError, ValueError):
             return False

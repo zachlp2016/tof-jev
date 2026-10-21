@@ -50,6 +50,8 @@ The normal Compose configuration disables mock inference. With no running backen
 
 Laya runs separately. Attach its container to Docker network `tof-prediction` with DNS name `laya-inference`, or use `http://host.docker.internal:PORT` for a host service. Pin its checkpoint/revision in that service, configure the corresponding `TOF_LAYA_MODEL` and `TOF_LAYA_MODEL_REVISION`, and verify its authenticated `/health` response. The adapter does not install CUDA, load weights, or validate V100 compatibility. That belongs to the separate inference deployment.
 
+For TechOverFL's bare-metal Laya service on `node-host-2`, use the fail-closed template and placement notes in [`deploy/node-host-2-v100`](deploy/node-host-2-v100/README.md). Its longer initial timeout accommodates a checkpoint reload after idle VRAM release.
+
 Hosted Jev requires all of:
 
 - Operator configuration `TOF_ENABLE_HOSTED=true` and `TOF_JEV_API_KEY`.
