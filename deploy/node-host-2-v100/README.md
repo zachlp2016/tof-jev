@@ -25,3 +25,17 @@ reviewed English checkpoint revision and adds narrowly scoped egress to
 label-gated ingress. Create `tof-prediction-adapter-secrets` out of band before
 applying the overlay. The deployment does not use a PVC or service-account
 token.
+
+The overlay was deployed to the `tof` namespace on 2026-10-21. The pod became
+Ready on `mananode-3` with no restarts. Authenticated REST and MCP decisions,
+model revision provenance, and a labeled in-cluster client call through the
+Service and NetworkPolicy all passed. The deployed image resolves to
+`sha256:92419f223f323901bfe44b569f68dfce4b527ddcfa4718f91f771b91a2fa97c1`.
+
+The current overlay references base manifests above its directory. From a
+checked-out repository, render it with:
+
+```sh
+kubectl kustomize --load-restrictor LoadRestrictionsNone \
+  deploy/kubernetes/node-host-2-v100 | kubectl apply --server-side -f -
+```

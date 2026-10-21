@@ -15,6 +15,7 @@ Originally completed October 20, 2026 (America/Los_Angeles), for adapter version
 | Docker health | Healthy |
 | Remote GitHub Actions | Triggered on publication; see the repository Actions tab for current results |
 | Version 0.1.1 local Linux tests, Python 3.13.5 | 286 passed; Ruff lint and format checks passed |
+| Version 0.1.1 Kubernetes/Laya integration | One pod Ready with zero restarts; authenticated readiness, REST inference, MCP discovery/calculation/inference, and labeled in-cluster client access passed against `192.168.10.207:8084` |
 
 Coverage includes strict typed questions, deterministic numerical edge cases, upstream contract normalization, timeouts, no redirects/retries/fallback, body/response limits, chunked bodies, request deadlines, concurrency, batch ordering and partial failures, shared authentication, host/origin checks, IPv6/uppercase host interoperability, liveness during saturation, sanitized errors, token rotation, and synthetic mock labeling.
 
@@ -26,10 +27,9 @@ Source is published to [zachlp2016/tof-jev](https://github.com/zachlp2016/tof-je
 
 ## Not validated here
 
-- Real Laya inference, model weights, model accuracy, calibration or V100/CUDA compatibility.
+- Model accuracy, calibration, or formal checkpoint-quality evaluation.
 - Live hosted Jev inference or account/model availability; no hosted API credential was supplied.
-- Kubernetes deployment, cluster network-policy enforcement, production ingress or TLS.
-- Live adapter-to-Laya inference and cold-start timing on `node-host-2` (host unreachable during the 0.1.1 validation).
+- Production ingress/TLS, cross-namespace caller integration, and post-idle cold-start timing.
 - OAuth-only MCP clients; this service uses explicitly configured bearer tokens.
 
 These are external deployment/model acceptance tasks. The adapter contains complete local/hosted HTTP integrations and deterministic calculations, but does not invent trained forecasts or model-quality results. See the operations guide for the transition to a real backend.
