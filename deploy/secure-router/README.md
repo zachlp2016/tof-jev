@@ -163,9 +163,10 @@ and restart the Router. Remove only its `jev-tunnel.conf` drop-in, reload
 systemd, then disable/stop `tof-jev-tunnel.service`. Keep the correct
 nonretryable timeout response. The adapter and Laya can remain running.
 No database, application deployment, or model weights need to be restored.
-# Infrastructure isolation update — 2026-10-21
 
-The following transport and benchmark records describe the original rollout.
+## Infrastructure isolation update — 2026-10-21
+
+The preceding transport and benchmark records describe the original rollout.
 The subsequent infrastructure-only rollout combines `216cf04` with this work:
 named `router` and `operations` credentials, three calls per credential, one
 shared four-call pool, immediate 503/`Retry-After: 1`, and authenticated
@@ -174,4 +175,3 @@ The V100 overlay is single-replica/single-worker with `Recreate`, so replacement
 do not multiply the process-local quota. The standard routed smoke now uses
 three concurrent calls; historical four-caller benchmark results predate this
 per-consumer limit. See `isolation.py` for bounded two-consumer qualification.
-

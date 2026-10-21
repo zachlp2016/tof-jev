@@ -80,7 +80,7 @@ def main():
             peaks = {"global": 0, "router": 0, "operations": 0}
             sample_errors = []
 
-            def sample():
+            def sample(stop=stop, peaks=peaks, sample_errors=sample_errors):
                 with httpx.Client(timeout=3, trust_env=False, headers=auth) as observer:
                     while not stop.is_set():
                         try:
@@ -97,7 +97,14 @@ def main():
                             sample_errors.append(type(exc).__name__)
                         stop.wait(0.02)
 
-            def worker(consumer, index):
+            def worker(
+                consumer,
+                index,
+                barrier=barrier,
+                timing=timing,
+                stop=stop,
+                router_callers=router_callers,
+            ):
                 caller = Caller(
                     ROUTER if consumer == "router" else ADAPTER,
                     None if consumer == "router" else key,
