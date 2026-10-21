@@ -1,0 +1,10 @@
+# Explicit local development opt-in:
+# docker compose -f compose.yaml -f compose.dev.yaml up --build -d
+# This backend is deterministic demonstration data, not model inference.
+services:
+  tof-prediction-adapter:
+    environment:
+      TOF_API_KEYS: '["local-development-key-change-before-deploying"]'
+      TOF_DEFAULT_BACKEND: mock
+      TOF_ALLOW_MOCK: "true"
+      TOF_ENABLE_HOSTED: "false"

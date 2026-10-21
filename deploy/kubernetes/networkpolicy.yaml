@@ -1,0 +1,40 @@
+# Requires a CNI that enforces Kubernetes NetworkPolicy.
+# Clients and Laya are in the tof namespace. Adjust selectors for your cluster.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tof-prediction-adapter
+  namespace: tof
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: tof-prediction-adapter
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              tof-prediction-client: "true"
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: laya-inference
+      ports:
+        - protocol: TCP
+          port: 8080
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

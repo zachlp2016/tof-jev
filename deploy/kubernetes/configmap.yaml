@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tof-prediction-adapter
+  namespace: tof
+  labels:
+    app.kubernetes.io/name: tof-prediction-adapter
+data:
+  TOF_DEFAULT_BACKEND: laya
+  TOF_LAYA_BASE_URL: http://laya-inference:8080
+  TOF_JEV_BASE_URL: https://api.typesafe.ai
+  TOF_ENABLE_HOSTED: "false"
+  TOF_ALLOW_MOCK: "false"
+  # Include both short service names and the namespace-qualified Kubernetes DNS names.
+  TOF_ALLOWED_HOSTS: '["localhost","127.0.0.1","[::1]","tof-prediction-adapter","tof-prediction-adapter.tof","tof-prediction-adapter.tof.svc","tof-prediction-adapter.tof.svc.cluster.local"]'

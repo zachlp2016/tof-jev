@@ -1,0 +1,50 @@
+name: Adapter CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: adapter-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test and lint with locked dependencies
+        run: docker build --target test --progress plain -t tof-prediction-adapter:test .
+      - name: Build runtime image
+        run: docker build --target runtime --progress plain -t tof-prediction-adapter:ci .
+      - name: Verify hardened runtime starts and becomes ready
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name adapter-ci \
+            --read-only --tmpfs /tmp:rw,noexec,nosuid,size=16m \
+            --cap-drop ALL --security-opt no-new-privileges \
+            -p 127.0.0.1:8080:8080 \
+            -e 'TOF_API_KEYS=["ci-only-key-never-use-in-production"]' \
+            -e TOF_DEFAULT_BACKEND=mock \
+            -e TOF_ALLOW_MOCK=true \
+            -e TOF_ENABLE_HOSTED=false \
+            tof-prediction-adapter:ci
+          trap 'docker logs adapter-ci; docker rm -f adapter-ci' EXIT
+          ready=false
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8080/health/ready; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" = true
+          curl --fail --silent http://127.0.0.1:8080/health/live
+          docker exec \
+            -e TOF_SMOKE_API_KEY=ci-only-key-never-use-in-production \
+            -i adapter-ci python - < scripts/smoke.py

@@ -1,0 +1,7 @@
+{
+  "operation": "expected_value",
+  "outcomes": [
+    {"value": -20, "probability": 0.25},
+    {"value": 40, "probability": 0.75}
+  ]
+}

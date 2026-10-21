@@ -1,0 +1,50 @@
+name: tof-prediction
+
+services:
+  tof-prediction-adapter:
+    image: tof-prediction-adapter:local
+    build:
+      context: .
+      target: runtime
+    init: true
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${TOF_PORT:-8080}:8080"
+    # Pass optional adapter settings from the same untracked local .env file.
+    # The explicit environment below keeps production mock inference disabled.
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Empty keys fail application startup; never use the dev key in production.
+      TOF_API_KEYS: ${TOF_API_KEYS:-[]}
+      TOF_DEFAULT_BACKEND: ${TOF_DEFAULT_BACKEND:-laya}
+      TOF_LAYA_BASE_URL: ${TOF_LAYA_BASE_URL:-http://laya-inference:8080}
+      TOF_LAYA_API_KEY: ${TOF_LAYA_API_KEY:-}
+      TOF_JEV_BASE_URL: ${TOF_JEV_BASE_URL:-https://api.typesafe.ai}
+      TOF_JEV_API_KEY: ${TOF_JEV_API_KEY:-}
+      TOF_ENABLE_HOSTED: ${TOF_ENABLE_HOSTED:-false}
+      TOF_ALLOW_MOCK: "false"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777,noexec,nosuid
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 1.0
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - prediction
+
+networks:
+  # Attach the future Laya service to this named network. No GPU is needed here.
+  prediction:
+    name: ${TOF_DOCKER_NETWORK:-tof-prediction}

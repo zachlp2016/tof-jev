@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tof-prediction-adapter
+  namespace: tof
+  labels:
+    app.kubernetes.io/name: tof-prediction-adapter
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: tof-prediction-adapter
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

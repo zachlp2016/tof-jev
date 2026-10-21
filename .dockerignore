@@ -1,0 +1,15 @@
+*
+!Dockerfile
+!pyproject.toml
+!README.md
+!requirements.lock
+!requirements-dev.lock
+!src/
+!src/**
+!tests/
+!tests/**
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.ruff_cache/
+**/*.egg-info/

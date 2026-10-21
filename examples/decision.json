@@ -1,0 +1,10 @@
+{
+  "state": {
+    "claim": "The new process reduced delivery time",
+    "source_summary": "A report compares delivery measurements before and after the process change.",
+    "source_type": "research_report"
+  },
+  "decision_key": "research.evidence_screen.v1",
+  "data_classification": "internal",
+  "evidence_refs": ["example-source-1"]
+}
