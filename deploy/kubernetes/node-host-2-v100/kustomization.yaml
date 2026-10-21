@@ -14,7 +14,7 @@ resources:
 images:
   - name: tof-prediction-adapter
     newName: ghcr.io/zachlp2016/tof-jev
-    digest: sha256:375fdd02c665c2d2e32fa9d575fb73961d124f057f07dcf5c0d7a7000c38054a
+    digest: sha256:3797ff80798573cef267a95a12c8251764b2799dd693347fa70eb94640cf88ef
 
 replicas:
   - name: tof-prediction-adapter
