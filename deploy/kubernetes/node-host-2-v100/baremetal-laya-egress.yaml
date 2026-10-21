@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: tof-prediction-adapter-baremetal-laya
-  namespace: tof
+  namespace: tof-jev
 spec:
   podSelector:
     matchLabels:

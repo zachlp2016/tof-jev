@@ -26,7 +26,7 @@ label-gated ingress. Create `tof-prediction-adapter-secrets` out of band before
 applying the overlay. The deployment does not use a PVC or service-account
 token.
 
-The overlay was deployed to the `tof` namespace on 2026-10-21. The pod became
+The overlay is deployed to the dedicated `tof-jev` namespace. The pod became
 Ready on `mananode-3` with no restarts. Authenticated REST and MCP decisions,
 model revision provenance, and a labeled in-cluster client call through the
 Service and NetworkPolicy all passed. The deployed image resolves to

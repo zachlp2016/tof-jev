@@ -1,6 +1,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+namespace: tof-jev
+
 resources:
   - ../namespace.yaml
   - ../configmap.yaml
@@ -20,6 +22,13 @@ replicas:
 
 patches:
   - target:
+      kind: Namespace
+      name: tof
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: tof-jev
+  - target:
       kind: ConfigMap
       name: tof-prediction-adapter
     patch: |-
@@ -35,3 +44,6 @@ patches:
       - op: add
         path: /data/TOF_REQUEST_TIMEOUT_SECONDS
         value: "90"
+      - op: replace
+        path: /data/TOF_ALLOWED_HOSTS
+        value: '["localhost","127.0.0.1","[::1]","tof-prediction-adapter","tof-prediction-adapter.tof-jev","tof-prediction-adapter.tof-jev.svc","tof-prediction-adapter.tof-jev.svc.cluster.local"]'
