@@ -64,6 +64,12 @@ The runtime uses UID/GID 10001, a read-only root filesystem, temporary `/tmp`, d
 
 ## Model acceptance and future expansion
 
+The Secure Router's native `/v1/decisions` route is active through the
+[supervised SSH/Kubernetes transport](../deploy/secure-router/README.md).
+This deployment retains the existing adapter image and four-call limit.
+Its loopback API, transport failure/recovery, real inference, and provenance
+were qualified independently of any application integration.
+
 Before using model scores to influence application behavior, collect a representative held-out labeled dataset, pin question schema and checkpoint, and assess accuracy, Brier/log loss and calibration. Keep training, calibration and test sets separate. No calibration dataset or trained forecasting model is supplied here, and `calibrated` remains false. Model evaluation and V100 inference are separate from adapter contract tests.
 
 To add a backend, implement a bounded transport/normalizer, register explicit routing configuration and privacy policy, add contract fixtures, and extend discovery. To change a profile, add a new versioned key rather than silently changing an established schema. Consumers should store the returned schema hash and model identity with their own observations.
