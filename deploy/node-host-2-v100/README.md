@@ -19,18 +19,23 @@ authenticated tunnel before sending non-public state.
 ## Kubernetes overlay
 
 `deploy/kubernetes/node-host-2-v100` deploys one stateless adapter replica using
-the immutable GHCR image produced from commit `c0ff8c3`. It configures the
+an immutable GHCR image. The 2026-10-21 Parallax advisory rollout uses the
+image produced from commit `84235b4`, pinned by commit `82ccb6f`. It configures the
 reviewed English checkpoint revision and adds narrowly scoped egress to
 `192.168.10.207:8084`; the base policy continues to provide DNS egress and
 label-gated ingress. Create `tof-prediction-adapter-secrets` out of band before
 applying the overlay. The deployment does not use a PVC or service-account
 token.
 
-The overlay is deployed to the dedicated `tof-jev` namespace. The replacement
-pod became Ready on `mananode-2` with no restarts. Authenticated REST and MCP decisions,
-model revision provenance, and a labeled in-cluster client call through the
-Service and NetworkPolicy all passed. The deployed image resolves to
-`sha256:92419f223f323901bfe44b569f68dfce4b527ddcfa4718f91f771b91a2fa97c1`.
+The overlay is deployed to the dedicated `tof-jev` namespace. On 2026-10-21,
+the replacement pod became Ready on `mananode-3` with no restarts.
+Authenticated REST and MCP decisions, model revision provenance, and a labeled
+in-cluster client call through the Service and NetworkPolicy passed. The
+deployed image resolves to
+`sha256:3797ff80798573cef267a95a12c8251764b2799dd693347fa70eb94640cf88ef`.
+Router discovery exposes the five finance profiles, and the first live
+Parallax `portfolio.risk_review.v1` call created an advisory-only workspace
+revision while preserving the immutable portfolio calculation snapshot.
 The ConfigMap explicitly sets `TOF_MAX_CONCURRENT_REQUESTS=4`, matching the
 measured V100 saturation point. This remains a system-wide adapter limit even
 when multiple callers submit batched questions.
