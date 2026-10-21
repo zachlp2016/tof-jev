@@ -31,6 +31,9 @@ pod became Ready on `mananode-2` with no restarts. Authenticated REST and MCP de
 model revision provenance, and a labeled in-cluster client call through the
 Service and NetworkPolicy all passed. The deployed image resolves to
 `sha256:92419f223f323901bfe44b569f68dfce4b527ddcfa4718f91f771b91a2fa97c1`.
+The ConfigMap explicitly sets `TOF_MAX_CONCURRENT_REQUESTS=4`, matching the
+measured V100 saturation point. This remains a system-wide adapter limit even
+when multiple callers submit batched questions.
 
 The current overlay references base manifests above its directory. From a
 checked-out repository, render it with:

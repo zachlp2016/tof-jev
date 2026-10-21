@@ -7,6 +7,7 @@ metadata:
     app.kubernetes.io/name: tof-prediction-adapter
 data:
   TOF_DEFAULT_BACKEND: laya
+  TOF_MAX_CONCURRENT_REQUESTS: "4"
   TOF_LAYA_BASE_URL: http://laya-inference:8080
   TOF_JEV_BASE_URL: https://api.typesafe.ai
   TOF_ENABLE_HOSTED: "false"

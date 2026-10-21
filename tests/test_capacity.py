@@ -10,6 +10,10 @@ HEADERS = {"Authorization": f"Bearer {KEY}"}
 DECISION = {"state": "Example", "questions": {"q": {"type": "noul", "instructions": "Relevant?"}}}
 
 
+def test_v100_qualified_default_is_four_shared_inference_slots():
+    assert Settings(api_keys=[KEY]).max_concurrent_requests == 4
+
+
 async def test_liveness_survives_healthy_inference_saturation():
     entered, release = asyncio.Event(), asyncio.Event()
 

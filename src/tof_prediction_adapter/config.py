@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     enable_hosted: bool = False
     allow_mock: bool = False
     request_timeout_seconds: float = Field(default=30, gt=0, le=300)
-    max_concurrent_requests: int = Field(default=8, ge=1, le=256)
+    max_concurrent_requests: int = Field(default=4, ge=1, le=256)
     max_inflight_requests: int = Field(default=64, ge=1, le=4096)
     body_timeout_seconds: float = Field(default=10, gt=0, le=60, allow_inf_nan=False)
     max_body_bytes: int = Field(default=262144, ge=1024, le=2097152)

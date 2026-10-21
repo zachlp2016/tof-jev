@@ -16,7 +16,7 @@ All settings use the `TOF_` prefix; `.env.example` describes normal settings. Do
 - `ENABLE_HOSTED`, `JEV_BASE_URL`, `JEV_API_KEY`, `JEV_MODEL`: hosted configuration. HTTPS is required. Default Jev model is pinned to `jev-1.13.0`; availability belongs to the provider.
 - `ALLOW_MOCK`: false by default. Base Compose forces false; development override enables it and marks results synthetic.
 - `REQUEST_TIMEOUT_SECONDS`: total inference deadline, default 30; upstream client also has phase timeouts. No retries.
-- `MAX_CONCURRENT_REQUESTS`: shared inference slots, default 8. Batches schedule within this bound. Saturation fails quickly with retryable 503.
+- `MAX_CONCURRENT_REQUESTS`: shared inference slots, default 4. Batches schedule within this bound. Saturation fails quickly with retryable 503. The four-slot default is the measured V100 saturation point for ten-question requests; increasing it requires a new workload-shaped capacity qualification.
 - `MAX_INFLIGHT_REQUESTS`: total per-process HTTP ingress bound, default 64.
 - `BODY_TIMEOUT_SECONDS`: deadline to read a request body, default 10.
 - `MAX_BODY_BYTES`: default 262,144. Both declared length and streamed bytes are checked.
