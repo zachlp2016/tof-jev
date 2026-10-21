@@ -123,6 +123,39 @@ Their deployment hashes are:
 | `tests/test_router.py` | `b9f0fbe56e461f38a0f6a2db287a0d4489e9fd5c6fa5599bee6c0209f90371e0` |
 | `tests/test_production_config.py` | `0c3b3a2707e166a3a94aa4d3c2a250336245ead319597effce16f51817ea7385` |
 
+## Saturation benchmark
+
+The 2026-10-21 16:07:50 UTC run qualified the full Router -> adapter -> Laya
+path with ten questions per request. Four concurrent callers achieved
+30.925 requests/s (309.253 questions/s), p50 128.874 ms, p95 132.364 ms,
+and p99 134.669 ms with zero errors. Eight and sixteen callers maintained
+approximately the same throughput with immediate Router 503 backpressure.
+
+The matched direct-adapter control through the same tunnel reached 30.934
+requests/s at four callers. The Router added approximately 5.533 ms at one
+caller and had negligible observed effect on saturated throughput. The
+confirmed cold reload took 1.597 seconds end to end. GPU utilization peaked
+at 96%, VRAM at 2,902 MiB, and temperature at 55 C. No service restarted.
+
+This measures the current four-global-call release, not the unshipped
+`216cf04` three-per-consumer policy. The earlier benchmark's precise payload
+and backoff differ, so the results support similar capacity rather than a
+controlled speed-improvement claim. The complete record and raw samples are
+under `deployment-staging/tof-jev-kubernetes-20261021/README.md` and
+`deployment-staging/router-jev-benchmark-20261021` on Secure.
+
+Repeat this bounded run on Secure:
+
+```sh
+timeout --signal=TERM --kill-after=3s 180s python3 deploy/secure-router/benchmark.py \
+  --seconds 10 --output /secure/evidence/path/results.json \
+  --adapter-key-file /home/zachlp2016/tof-jev/.local/adapter-client-token
+```
+
+The optional key-file argument enables direct-adapter control tiers. Router
+tiers need no adapter credential. Every tier honors `Retry-After`; reported
+percentiles include successes only, and throughput includes final drain.
+
 ## Rollback
 
 Set `ROUTER_JEV_ENABLED=false` and empty `ROUTER_JEV_URL`, drain requests,
