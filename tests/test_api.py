@@ -329,6 +329,22 @@ async def test_hosted_opt_in_calls_only_configured_endpoint_with_upstream_creden
     assert "private-hosted-api-key" not in response.text
 
 
+async def test_batch_is_disabled_by_default_without_calling_upstream():
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return httpx.Response(200, json=answer())
+
+    async with api(handler=handler) as client:
+        response = await client.post(
+            "/v1/decisions/batch", json={"items": [decision()]}, headers=AUTH
+        )
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "batch_disabled"
+    assert calls == []
+
+
 async def test_upstream_failure_never_falls_back_to_mock_or_hosted():
     calls = []
 
@@ -386,7 +402,7 @@ async def test_batch_preserves_order_partial_errors_and_independent_request_ids(
             else httpx.Response(200, json=answer(0.9))
         )
 
-    async with api(handler=handler) as client:
+    async with api(handler=handler, enable_batch=True) as client:
         response = await client.post(
             "/v1/decisions/batch",
             json={
@@ -424,7 +440,10 @@ async def test_batch_policy_is_preflighted_before_transmitting_any_item():
         return httpx.Response(200, json=answer())
 
     async with api(
-        handler=handler, enable_hosted=True, jev_api_key="private-hosted-api-key"
+        handler=handler,
+        enable_batch=True,
+        enable_hosted=True,
+        jev_api_key="private-hosted-api-key",
     ) as client:
         response = await client.post(
             "/v1/decisions/batch",

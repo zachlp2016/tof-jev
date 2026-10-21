@@ -1,5 +1,4 @@
 import asyncio
-import hmac
 import json
 import logging
 import math
@@ -13,6 +12,7 @@ from .config import parse_authority
 from .errors import AdapterError, error_body
 
 request_id_context: ContextVar[str] = ContextVar("request_id", default="")
+consumer_context: ContextVar[str] = ContextVar("consumer", default="anonymous")
 logger = logging.getLogger("tof_prediction_adapter.requests")
 
 
@@ -70,6 +70,7 @@ class BoundaryMiddleware:
             return
         request_id = str(uuid4())
         token = request_id_context.set(request_id)
+        consumer_token = consumer_context.set("anonymous")
         started = time.monotonic()
         status = 500
         acquired = False
@@ -127,13 +128,12 @@ class BoundaryMiddleware:
             if path not in {"/health/live", "/health/ready"}:
                 authorization = headers.get("authorization", "")
                 scheme, _, supplied = authorization.partition(" ")
-                checks = [
-                    hmac.compare_digest(supplied.encode(), key.get_secret_value().encode())
-                    for key in self.settings.api_keys
-                ]
-                if scheme.lower() != "bearer" or not any(checks):
+                consumer = self.settings.consumer_for_api_key(supplied)
+                if scheme.lower() != "bearer" or consumer is None:
                     await reject("unauthorized", "A valid service bearer token is required.", 401)
                     return
+                consumer_context.reset(consumer_token)
+                consumer_token = consumer_context.set(consumer)
                 origin = headers.get("origin")
                 if origin is not None and origin not in self.settings.allowed_origins:
                     await reject("invalid_origin", "Origin is not allowed.", 403)
@@ -230,6 +230,7 @@ class BoundaryMiddleware:
                 json.dumps(
                     {
                         "request_id": request_id,
+                        "consumer": consumer_context.get(),
                         "operation": operation,
                         "status": status,
                         "latency_ms": round(elapsed * 1000, 3),
@@ -237,3 +238,4 @@ class BoundaryMiddleware:
                 )
             )
             request_id_context.reset(token)
+            consumer_context.reset(consumer_token)

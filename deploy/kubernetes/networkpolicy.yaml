@@ -1,5 +1,5 @@
 # Requires a CNI that enforces Kubernetes NetworkPolicy.
-# Clients and Laya are in the tof namespace. Adjust selectors for your cluster.
+# The stock namespace is tof; the node-host-2-v100 overlay renames it tof-jev.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -13,6 +13,18 @@ spec:
   ingress:
     - from:
         - podSelector:
+            matchLabels:
+              tof-prediction-client: "true"
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: tof-ai-app
+          podSelector:
+            matchLabels:
+              tof-prediction-client: "true"
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: tof-ai-app-test
+          podSelector:
             matchLabels:
               tof-prediction-client: "true"
       ports:

@@ -11,6 +11,7 @@ from .config import Settings
 from .contracts import DecisionRequest, DecisionResponse
 from .errors import AdapterError, error_body
 from .profiles import PROFILES
+from .security import consumer_context
 from .upstream import UpstreamError, call_backend, normalize_answers
 
 
@@ -19,6 +20,10 @@ class PredictionService:
         self.settings = settings
         self.client = client
         self.capacity = asyncio.Semaphore(settings.max_concurrent_requests)
+        self.consumer_capacity = {
+            consumer: asyncio.Semaphore(settings.max_concurrent_requests_per_consumer)
+            for consumer in settings.consumer_names()
+        }
 
     def prepare(self, request: DecisionRequest) -> tuple[str, dict]:
         backend = request.backend or self.settings.default_backend
@@ -50,9 +55,21 @@ class PredictionService:
         request_id = request_id or str(uuid4())
         backend, questions = self.prepare(request)
         started = time.monotonic()
+        consumer = consumer_context.get()
+        consumer_capacity = self.consumer_capacity.get(consumer)
+        if consumer_capacity is None:
+            raise AdapterError("unauthorized", "Authenticated consumer identity is unavailable.", 401)
+        consumer_acquired = False
+        global_acquired = False
         try:
+            await asyncio.wait_for(consumer_capacity.acquire(), timeout=0.01)
+            consumer_acquired = True
             await asyncio.wait_for(self.capacity.acquire(), timeout=0.01)
+            global_acquired = True
         except TimeoutError as exc:
+            if consumer_acquired:
+                consumer_capacity.release()
+                consumer_acquired = False
             raise AdapterError(
                 "capacity_exceeded", "Inference capacity is full; retry later.", 503, True
             ) from exc
@@ -154,7 +171,10 @@ class PredictionService:
                 warnings=warnings,
             )
         finally:
-            self.capacity.release()
+            if global_acquired:
+                self.capacity.release()
+            if consumer_acquired:
+                consumer_capacity.release()
 
     async def batch(self, items: list[DecisionRequest]) -> list[dict]:
         # Preflight the entire batch before transmitting any state.

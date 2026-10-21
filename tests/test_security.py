@@ -142,6 +142,24 @@ async def test_bad_auth_is_rejected_without_reading_or_echoing_credentials(autho
     assert "wrong-secret" not in str(sent)
 
 
+async def test_named_consumer_key_is_authenticated_without_legacy_keys(caplog):
+    caplog.set_level(logging.INFO, logger="tof_prediction_adapter.requests")
+    named_key = "parallax-named-service-key-123456"
+    app = BoundaryMiddleware(
+        response_app,
+        Settings(api_keys=[], consumer_api_keys={"parallax": named_key}),
+        Metric(),
+        Metric(),
+    )
+    sent = await invoke(
+        app,
+        request_scope=scope(headers={"authorization": "Bearer " + named_key}),
+    )
+    assert status(sent) == 200
+    assert '"consumer": "parallax"' in caplog.text
+    assert named_key not in caplog.text
+
+
 async def test_health_endpoint_requires_valid_host_but_no_service_key():
     sent = await invoke(
         boundary(),

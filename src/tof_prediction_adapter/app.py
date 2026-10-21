@@ -133,6 +133,12 @@ def create_app(
 
     @app.post("/v1/decisions/batch", dependencies=auth, tags=["predictions"])
     async def batch(request: BatchRequest):
+        if not settings.enable_batch:
+            raise AdapterError(
+                "batch_disabled",
+                "Batch decisions are disabled; submit one state with multiple questions.",
+                403,
+            )
         return {"request_id": request_id_context.get(), "items": await service.batch(request.items)}
 
     @app.post("/v1/calculations", dependencies=auth, tags=["mathematics"])
@@ -154,6 +160,11 @@ def create_app(
     async def backends():
         return {
             "default": settings.default_backend,
+            "limits": {
+                "active_requests": settings.max_concurrent_requests,
+                "active_requests_per_consumer": settings.max_concurrent_requests_per_consumer,
+                "batch_enabled": settings.enable_batch,
+            },
             "backends": [
                 {
                     "name": "laya",

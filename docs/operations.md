@@ -16,7 +16,9 @@ All settings use the `TOF_` prefix; `.env.example` describes normal settings. Do
 - `ENABLE_HOSTED`, `JEV_BASE_URL`, `JEV_API_KEY`, `JEV_MODEL`: hosted configuration. HTTPS is required. Default Jev model is pinned to `jev-1.13.0`; availability belongs to the provider.
 - `ALLOW_MOCK`: false by default. Base Compose forces false; development override enables it and marks results synthetic.
 - `REQUEST_TIMEOUT_SECONDS`: total inference deadline, default 30; upstream client also has phase timeouts. No retries.
-- `MAX_CONCURRENT_REQUESTS`: shared inference slots, default 4. Batches schedule within this bound. Saturation fails quickly with retryable 503. The four-slot default is the measured V100 saturation point for ten-question requests; increasing it requires a new workload-shaped capacity qualification.
+- `MAX_CONCURRENT_REQUESTS`: shared inference slots, default 4. Enabled batches schedule within this bound. Saturation fails quickly with retryable 503. The four-slot default is the measured V100 saturation point for ten-question requests; increasing it requires a new workload-shaped capacity qualification.
+- `MAX_CONCURRENT_REQUESTS_PER_CONSUMER`: nonblocking per-credential admission ceiling, default 3. Use distinct entries in `CONSUMER_API_KEYS` for Parallax and TOF so neither can occupy every shared slot.
+- `ENABLE_BATCH`: false by default. Prefer one state with multiple questions; enabling batches requires a separate weighted-admission review.
 - `MAX_INFLIGHT_REQUESTS`: total per-process HTTP ingress bound, default 64.
 - `BODY_TIMEOUT_SECONDS`: deadline to read a request body, default 10.
 - `MAX_BODY_BYTES`: default 262,144. Both declared length and streamed bytes are checked.
@@ -49,14 +51,14 @@ kubectl apply -f deploy/kubernetes/service.yaml
 kubectl apply -f deploy/kubernetes/networkpolicy.yaml
 ```
 
-Check exact filenames before use; the secret template and hosted-egress policy are deliberately separate opt-ins. Do not apply the directory recursively. Supply the local backend token in the Secret if enabled. Network policy admits only same-namespace client pods labeled `tof-prediction-client=true`, allows DNS, and allows the separately deployed local Laya pod label. Readiness probes send Host `localhost` to satisfy host protection.
+Check exact filenames before use; the secret template and hosted-egress policy are deliberately separate opt-ins. Do not apply the directory recursively. Supply the local backend token in the Secret if enabled. Network policy admits same-namespace client pods and pods in the `tof-ai-app` or `tof-ai-app-test` namespaces labeled `tof-prediction-client=true`. It allows DNS and the separately deployed local Laya pod label. Readiness probes send Host `localhost` to satisfy host protection.
 
 The `deploy/kubernetes/node-host-2-v100` Kustomize overlay instead permits only
 the bare-metal Laya address `192.168.10.207:8084`, selects an immutable GHCR
 image, and runs one replica. Its Secret remains deliberately out of source
-control. Callers still require the `tof-prediction-client=true` label in the
-`tof-jev` namespace unless ingress policy is explicitly extended for another
-namespace.
+control. Callers require the `tof-prediction-client=true` label. The checked-in
+policy admits labeled callers in `tof-jev`, `tof-ai-app`, and
+`tof-ai-app-test`; other namespaces remain denied.
 
 Hosted mode additionally requires pod label `tof-prediction-hosted=enabled`, explicit hosted settings/secrets, and the optional hosted egress policy. The stock policy permits public IPv4 TCP/443 rather than enforcing a domain allowlist. Use a cluster-specific FQDN policy or controlled egress proxy if the destination must be restricted to TypeSafe. A NetworkPolicy-enforcing CNI is required for these controls to take effect.
 
