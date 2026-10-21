@@ -111,3 +111,7 @@ python scripts/smoke.py --url http://127.0.0.1:8080
 To regenerate lockfiles with `uv`: `uv pip compile pyproject.toml requirements-build.in --python-version 3.12 --universal -o requirements.lock`, then add `--extra dev -o requirements-dev.lock` for development. Audit dependencies before deployment. CI tests the container and starts its hardened runtime.
 
 See [operations and Kubernetes](docs/operations.md), [client examples](docs/clients.md), and [validation record](docs/validation.md).
+
+TechOverFL's live loopback Router connection is documented in
+[the Secure Router deployment](deploy/secure-router/README.md), including
+the supervised SSH transport and repeatable real-Laya qualification.

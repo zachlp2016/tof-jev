@@ -1,0 +1,35 @@
+[Unit]
+Description=Private TOF Router transport to the Kubernetes Jev adapter
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=zachlp2016
+Group=zachlp2016
+# A forced remote TTY ties kubectl's lifetime to SSH: disconnect sends SIGHUP.
+# kubectl exits when its selected adapter pod terminates; systemd reconnects.
+# Both forwarding listeners bind loopback. No ClusterIP or NodePort is exposed.
+ExecStart=/usr/bin/ssh -F /home/zachlp2016/.ssh/config -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=10 -o ExitOnForwardFailure=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o TCPKeepAlive=no -tt -L 127.0.0.1:19421:127.0.0.1:19421 manatree exec /usr/bin/kubectl --namespace=tof-jev port-forward --address=127.0.0.1 service/tof-prediction-adapter 19421:8080
+Restart=always
+RestartSec=3s
+TimeoutStopSec=15s
+KillMode=control-group
+StandardInput=null
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictNamespaces=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target
