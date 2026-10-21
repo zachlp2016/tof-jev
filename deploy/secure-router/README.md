@@ -137,8 +137,7 @@ caller and had negligible observed effect on saturated throughput. The
 confirmed cold reload took 1.597 seconds end to end. GPU utilization peaked
 at 96%, VRAM at 2,902 MiB, and temperature at 55 C. No service restarted.
 
-This measures the current four-global-call release, not the unshipped
-`216cf04` three-per-consumer policy. The earlier benchmark's precise payload
+This measures the four-global-call release. The earlier benchmark's precise payload
 and backoff differ, so the results support similar capacity rather than a
 controlled speed-improvement claim. The complete record and raw samples are
 under `deployment-staging/tof-jev-kubernetes-20261021/README.md` and
@@ -168,10 +167,11 @@ No database, application deployment, or model weights need to be restored.
 
 The preceding transport and benchmark records describe the original rollout.
 The subsequent infrastructure-only rollout combines `216cf04` with this work:
-named `router` and `operations` credentials, three calls per credential, one
+named `router` and `operations` credentials capped at four and one calls, one
 shared four-call pool, immediate 503/`Retry-After: 1`, and authenticated
 per-consumer decision metrics. No Rails or Parallax integration is activated.
 The V100 overlay is single-replica/single-worker with `Recreate`, so replacements
-do not multiply the process-local quota. The standard routed smoke now uses
-three concurrent calls; historical four-caller benchmark results predate this
-per-consumer limit. See `isolation.py` for bounded two-consumer qualification.
+do not multiply the process-local quota. No capacity is reserved: Router may
+occupy all four slots while operations is idle. The standard routed smoke uses
+four concurrent calls. See `isolation.py` for Router-only and mixed-consumer
+qualification, including backpressure when the shared pool is full.

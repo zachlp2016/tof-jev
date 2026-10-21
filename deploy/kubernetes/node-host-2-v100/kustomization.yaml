@@ -14,7 +14,7 @@ resources:
 images:
   - name: tof-prediction-adapter
     newName: ghcr.io/zachlp2016/tof-jev
-    newTag: sha-c0ff8c354594006974c4d72b0488178284ef1b4e
+    digest: sha256:dd72c5048e91f163dd8d052deedb6702f830bc8af46b0bf1557481ecf4b20075
 
 replicas:
   - name: tof-prediction-adapter
@@ -66,6 +66,9 @@ patches:
       - op: add
         path: /data/TOF_REQUEST_TIMEOUT_SECONDS
         value: "90"
+      - op: add
+        path: /data/TOF_CONSUMER_CONCURRENCY_LIMITS
+        value: '{"router":4,"operations":1}'
       - op: replace
         path: /data/TOF_ALLOWED_HOSTS
         value: '["localhost","127.0.0.1","[::1]","tof-prediction-adapter","tof-prediction-adapter.tof-jev","tof-prediction-adapter.tof-jev.svc","tof-prediction-adapter.tof-jev.svc.cluster.local"]'

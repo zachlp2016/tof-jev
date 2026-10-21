@@ -163,7 +163,10 @@ def create_app(
             "default": settings.default_backend,
             "limits": {
                 "active_requests": settings.max_concurrent_requests,
-                "active_requests_per_consumer": settings.max_concurrent_requests_per_consumer,
+                "consumer_active_requests": {
+                    consumer: settings.consumer_limit(consumer)
+                    for consumer in sorted(settings.consumer_names())
+                },
                 "batch_enabled": settings.enable_batch,
             },
             "backends": [

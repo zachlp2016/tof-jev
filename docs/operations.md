@@ -17,7 +17,8 @@ All settings use the `TOF_` prefix; `.env.example` describes normal settings. Do
 - `ALLOW_MOCK`: false by default. Base Compose forces false; development override enables it and marks results synthetic.
 - `REQUEST_TIMEOUT_SECONDS`: total inference deadline, default 30; upstream client also has phase timeouts. No retries.
 - `MAX_CONCURRENT_REQUESTS`: shared inference slots, default 4. Enabled batches schedule within this bound. Saturation fails quickly with retryable 503. The four-slot default is the measured V100 saturation point for ten-question requests; increasing it requires a new workload-shaped capacity qualification.
-- `MAX_CONCURRENT_REQUESTS_PER_CONSUMER`: nonblocking per-credential admission ceiling, default 3. Use distinct entries in `CONSUMER_API_KEYS` for Parallax and TOF so neither can occupy every shared slot.
+- `CONSUMER_API_KEYS`: JSON object mapping service names to distinct generated tokens. Live infrastructure uses `router` and `operations`; legacy `API_KEYS` is empty.
+- `CONSUMER_CONCURRENCY_LIMITS`: optional JSON object of upper bounds for configured credentials; absent entries can use the full global pool. The V100 overlay uses `{"router":4,"operations":1}`. These are caps, not reserved allocations: Router may occupy all four slots, and operations is rejected if the shared pool is full.
 - `ENABLE_BATCH`: false by default. Prefer one state with multiple questions; enabling batches requires a separate weighted-admission review.
 - `MAX_INFLIGHT_REQUESTS`: total per-process HTTP ingress bound, default 64.
 - `BODY_TIMEOUT_SECONDS`: deadline to read a request body, default 10.
@@ -83,7 +84,8 @@ The runtime uses UID/GID 10001, a read-only root filesystem, temporary `/tmp`, d
 The Secure Router's native `/v1/decisions` route is active through the
 [supervised SSH/Kubernetes transport](../deploy/secure-router/README.md).
 The infrastructure isolation rollout retains the four-call shared limit and
-uses distinct `router` and `operations` credentials, each limited to three.
+uses distinct `router` and `operations` credentials, capped at four and one
+respectively, sharing four slots with no reserved capacity.
 Router traffic is one consumer regardless of caller-supplied identity headers.
 The operations credential is for controlled infrastructure validation, not an
 application integration. Multi-state batch endpoints remain disabled; a single

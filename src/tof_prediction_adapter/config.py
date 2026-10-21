@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Annotated, Literal
 from urllib.parse import urlsplit
 
 from pydantic import Field, SecretStr, field_validator, model_validator
@@ -44,7 +44,9 @@ class Settings(BaseSettings):
     allow_mock: bool = False
     request_timeout_seconds: float = Field(default=30, gt=0, le=300)
     max_concurrent_requests: int = Field(default=4, ge=1, le=256)
-    max_concurrent_requests_per_consumer: int = Field(default=3, ge=1, le=256)
+    consumer_concurrency_limits: dict[str, Annotated[int, Field(strict=True, ge=1, le=256)]] = (
+        Field(default_factory=dict)
+    )
     max_inflight_requests: int = Field(default=64, ge=1, le=4096)
     enable_batch: bool = False
     body_timeout_seconds: float = Field(default=10, gt=0, le=60, allow_inf_nan=False)
@@ -95,9 +97,7 @@ class Settings(BaseSettings):
                 or any(character not in allowed for character in name)
                 or name == "legacy"
             ):
-                raise ValueError(
-                    "TOF_CONSUMER_API_KEYS names must be lowercase ASCII identifiers"
-                )
+                raise ValueError("TOF_CONSUMER_API_KEYS names must be lowercase ASCII identifiers")
         return values
 
     def consumer_for_api_key(self, supplied: str) -> str | None:
@@ -117,6 +117,9 @@ class Settings(BaseSettings):
             names.add("legacy")
         return names
 
+    def consumer_limit(self, consumer: str) -> int:
+        return self.consumer_concurrency_limits.get(consumer, self.max_concurrent_requests)
+
     @model_validator(mode="after")
     def configured(self):
         keys = [key.get_secret_value() for key in self.api_keys]
@@ -127,6 +130,13 @@ class Settings(BaseSettings):
             )
         if len(keys) != len(set(keys)):
             raise ValueError("service API keys must be unique")
+        if self.consumer_concurrency_limits.keys() - self.consumer_names():
+            raise ValueError("consumer concurrency limits require configured credentials")
+        if any(
+            limit > self.max_concurrent_requests
+            for limit in self.consumer_concurrency_limits.values()
+        ):
+            raise ValueError("consumer concurrency limits cannot exceed global capacity")
         if self.default_backend == "mock" and not self.allow_mock:
             raise ValueError("mock backend requires TOF_ALLOW_MOCK=true")
         if self.enable_hosted:

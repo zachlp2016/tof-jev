@@ -23,7 +23,7 @@ class PredictionService:
         self.metrics = metrics
         self.capacity = asyncio.Semaphore(settings.max_concurrent_requests)
         self.consumer_capacity = {
-            consumer: asyncio.Semaphore(settings.max_concurrent_requests_per_consumer)
+            consumer: asyncio.Semaphore(settings.consumer_limit(consumer))
             for consumer in settings.consumer_names()
         }
 

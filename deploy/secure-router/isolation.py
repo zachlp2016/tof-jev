@@ -60,7 +60,7 @@ def main():
         backend.raise_for_status()
         assert backend.json()["limits"] == {
             "active_requests": 4,
-            "active_requests_per_consumer": 3,
+            "consumer_active_requests": {"router": 4, "operations": 1},
             "batch_enabled": False,
         }
         payload = {"items": [{"state": STATE, "questions": QUESTIONS}]}
@@ -73,7 +73,7 @@ def main():
             assert result["status"] == 200 and result["correct"] and result["provenance_ok"]
         finally:
             warm.close()
-        for router_callers, operations_callers in ((3, 1), (4, 4)):
+        for router_callers, operations_callers in ((4, 0), (3, 1), (4, 2)):
             stop = threading.Event()
             barrier = threading.Barrier(router_callers + operations_callers + 1)
             timing = {}
@@ -198,7 +198,8 @@ def main():
         for stage in output["stages"]:
             assert not stage["sampler_errors"]
             assert stage["observed_peak_active"]["global"] <= 4
-            assert all(stage["observed_peak_active"][c] <= 3 for c in ("router", "operations"))
+            assert stage["observed_peak_active"]["router"] <= 4
+            assert stage["observed_peak_active"]["operations"] <= 1
             for result in stage["records"]:
                 assert result["status"] in (200, 503)
                 if result["status"] == 200:
@@ -208,7 +209,12 @@ def main():
                     assert result["retry_after_seconds"] >= 1
         first = output["stages"][0]
         assert first["observed_peak_active"]["global"] == 4
-        assert all(list(value["statuses"]) == ["200"] for value in first["summary"].values())
+        assert first["observed_peak_active"]["router"] == 4
+        assert list(first["summary"]["router"]["statuses"]) == ["200"]
+        assert first["summary"]["operations"]["statuses"] == {}
+        mixed = output["stages"][1]
+        assert mixed["observed_peak_active"]["global"] == 4
+        assert all(list(value["statuses"]) == ["200"] for value in mixed["summary"].values())
         for scope in ("consumer", "global"):
             assert any(
                 m["name"] == "tof_adapter_admission_rejections_total"
