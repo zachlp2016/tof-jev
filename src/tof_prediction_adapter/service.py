@@ -10,15 +10,17 @@ import httpx
 from .config import Settings
 from .contracts import DecisionRequest, DecisionResponse
 from .errors import AdapterError, error_body
+from .metrics import DecisionMetrics
 from .profiles import PROFILES
 from .security import consumer_context
 from .upstream import UpstreamError, call_backend, normalize_answers
 
 
 class PredictionService:
-    def __init__(self, settings: Settings, client: httpx.AsyncClient):
+    def __init__(self, settings: Settings, client: httpx.AsyncClient, metrics: DecisionMetrics):
         self.settings = settings
         self.client = client
+        self.metrics = metrics
         self.capacity = asyncio.Semaphore(settings.max_concurrent_requests)
         self.consumer_capacity = {
             consumer: asyncio.Semaphore(settings.max_concurrent_requests_per_consumer)
@@ -59,20 +61,19 @@ class PredictionService:
         consumer_capacity = self.consumer_capacity.get(consumer)
         if consumer_capacity is None:
             raise AdapterError("unauthorized", "Authenticated consumer identity is unavailable.", 401)
-        consumer_acquired = False
-        global_acquired = False
-        try:
-            await asyncio.wait_for(consumer_capacity.acquire(), timeout=0.01)
-            consumer_acquired = True
-            await asyncio.wait_for(self.capacity.acquire(), timeout=0.01)
-            global_acquired = True
-        except TimeoutError as exc:
-            if consumer_acquired:
-                consumer_capacity.release()
-                consumer_acquired = False
+        scope = "consumer" if consumer_capacity.locked() else "global"
+        if consumer_capacity.locked() or self.capacity.locked():
+            self.metrics.rejected.labels(consumer=consumer, scope=scope).inc()
             raise AdapterError(
                 "capacity_exceeded", "Inference capacity is full; retry later.", 503, True
-            ) from exc
+            )
+        # Available semaphore acquires do not yield in this single event loop.
+        # Check and acquire both pools atomically: no waiters and no 10ms queue.
+        await consumer_capacity.acquire()
+        await self.capacity.acquire()
+        self.metrics.active.labels(consumer=consumer).inc()
+        self.metrics.global_active.inc()
+        outcome = "error"
         try:
             warnings = ["Advisory model assessment; not a calibrated forecast or authorization."]
             if backend == "mock":
@@ -151,7 +152,7 @@ class PredictionService:
                 )
             ):
                 warnings.append("Upstream reported input truncation.")
-            return DecisionResponse(
+            result = DecisionResponse(
                 request_id=request_id,
                 created_at=datetime.now(UTC),
                 decision_key=request.decision_key,
@@ -170,11 +171,21 @@ class PredictionService:
                 data_classification=request.data_classification,
                 warnings=warnings,
             )
+            outcome = "success"
+            self.metrics.questions.labels(consumer=consumer, backend=backend).inc(len(questions))
+            return result
+        except asyncio.CancelledError:
+            outcome = "cancelled"
+            raise
         finally:
-            if global_acquired:
-                self.capacity.release()
-            if consumer_acquired:
-                consumer_capacity.release()
+            self.capacity.release()
+            consumer_capacity.release()
+            self.metrics.active.labels(consumer=consumer).dec()
+            self.metrics.global_active.dec()
+            self.metrics.completed.labels(consumer=consumer, backend=backend, outcome=outcome).inc()
+            self.metrics.duration.labels(consumer=consumer, backend=backend).observe(
+                time.monotonic() - started
+            )
 
     async def batch(self, items: list[DecisionRequest]) -> list[dict]:
         # Preflight the entire batch before transmitting any state.

@@ -138,7 +138,7 @@ def main():
         }
 
     warmup = decide("warmup")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
         results = list(pool.map(decide, range(12)))
     assert len({result["adapter_request_id"] for result in results}) == 12
     status, _, progress, _ = request(
@@ -161,7 +161,7 @@ def main():
         json.dumps(
             {
                 "checks": checks,
-                "concurrency": 4,
+                "concurrency": 3,
                 "successful_decisions": 14,
                 "model": "english",
                 "revision": REVISION,

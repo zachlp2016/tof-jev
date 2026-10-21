@@ -21,6 +21,7 @@ from .config import Settings, parse_authority
 from .contracts import BatchRequest, DecisionRequest, DecisionResponse
 from .errors import AdapterError, error_body
 from .mcp_server import create_mcp
+from .metrics import DecisionMetrics
 from .profiles import PROFILES
 from .security import BoundaryMiddleware, request_id_context
 from .service import PredictionService
@@ -47,9 +48,9 @@ def create_app(
         ),
         transport=transport,
     )
-    service = PredictionService(settings, client)
-    manager = create_mcp(service, settings)
     registry = CollectorRegistry()
+    service = PredictionService(settings, client, DecisionMetrics(registry))
+    manager = create_mcp(service, settings)
     requests = Counter(
         "tof_adapter_requests_total",
         "Requests by bounded operation and HTTP status",

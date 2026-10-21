@@ -34,7 +34,17 @@ Use TLS at an ingress/reverse proxy before exposing beyond localhost or a truste
 
 The TechOverFL V100 service currently uses `http://192.168.10.207:8084`. If the adapter runs on another machine, that HTTP hop carries the Laya bearer and request state without transport encryption; use an authenticated tunnel/TLS proxy or an explicitly trusted isolated network. The stock Kubernetes policy targets a same-namespace Laya pod on port 8080 and must not be applied unchanged for the bare-metal V100 endpoint.
 
-Structured request logs include only generated request ID, bounded operation label, HTTP status and duration. They omit state, arbitrary query strings, bearer tokens and raw upstream payloads. Metrics use bounded labels and never include caller IDs or user text. Protect `/metrics` using the service token. MCP errors are represented inside successful HTTP protocol responses; inspect MCP `isError`, not just HTTP status.
+Structured request logs include generated request ID, authenticated service consumer, bounded operation label, HTTP status and duration. They omit state, arbitrary query strings, bearer tokens and raw upstream payloads. Metrics use only configured service names, bounded backend/outcome/scope labels, operations and HTTP statuses; never request IDs, JobRun IDs, credentials or user text. Protect `/metrics` using the service token. MCP errors are represented inside successful HTTP protocol responses; inspect MCP `isError`, not just HTTP status.
+
+The REST and MCP decision paths share `tof_adapter_decisions_total` (consumer,
+backend, outcome), `tof_adapter_questions_total` (successful questions),
+`tof_adapter_decision_duration_seconds` (admitted calls, including failures),
+`tof_adapter_admission_rejections_total` (consumer/global scope), and active
+global/per-consumer gauges. Admission is immediate: there is no inference queue,
+no server retry, and overflow returns 503 with `Retry-After: 1`. HTTP ingress
+overload is separately bounded and also returns this header. These metrics are
+available at authenticated `/metrics`; deployment does not imply a Prometheus
+scraper or alerting service has been installed.
 
 ## Kubernetes
 
@@ -57,8 +67,12 @@ The `deploy/kubernetes/node-host-2-v100` Kustomize overlay instead permits only
 the bare-metal Laya address `192.168.10.207:8084`, selects an immutable GHCR
 image, and runs one replica. Its Secret remains deliberately out of source
 control. Callers require the `tof-prediction-client=true` label. The checked-in
-policy admits labeled callers in `tof-jev`, `tof-ai-app`, and
-`tof-ai-app-test`; other namespaces remain denied.
+overlay policy admits labeled callers only in `tof-jev`; the generic base's
+staged application namespace access is explicitly removed by this overlay.
+It uses `Recreate` and a 120-second termination grace period. Admission is
+process-local: keep one replica and one Uvicorn worker, with no HPA. Replacements
+have a brief outage rather than overlapping two independent four-slot pools.
+Scaling requires distributed admission or a separately allocated inference pool.
 
 Hosted mode additionally requires pod label `tof-prediction-hosted=enabled`, explicit hosted settings/secrets, and the optional hosted egress policy. The stock policy permits public IPv4 TCP/443 rather than enforcing a domain allowlist. Use a cluster-specific FQDN policy or controlled egress proxy if the destination must be restricted to TypeSafe. A NetworkPolicy-enforcing CNI is required for these controls to take effect.
 
@@ -68,7 +82,13 @@ The runtime uses UID/GID 10001, a read-only root filesystem, temporary `/tmp`, d
 
 The Secure Router's native `/v1/decisions` route is active through the
 [supervised SSH/Kubernetes transport](../deploy/secure-router/README.md).
-This deployment retains the existing adapter image and four-call limit.
+The infrastructure isolation rollout retains the four-call shared limit and
+uses distinct `router` and `operations` credentials, each limited to three.
+Router traffic is one consumer regardless of caller-supplied identity headers.
+The operations credential is for controlled infrastructure validation, not an
+application integration. Multi-state batch endpoints remain disabled; a single
+state may still contain ten questions. The 25 requests/sec target is capacity
+guidance for combined traffic, not a configured rate limiter or guaranteed SLA.
 Its loopback API, transport failure/recovery, real inference, and provenance
 were qualified independently of any application integration.
 

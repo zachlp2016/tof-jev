@@ -21,6 +21,28 @@ replicas:
     count: 1
 
 patches:
+  # Quotas are process-local: never overlap two adapter processes on this GPU.
+  - target:
+      kind: Deployment
+      name: tof-prediction-adapter
+    patch: |-
+      - op: add
+        path: /spec/strategy
+        value: {type: Recreate}
+      - op: replace
+        path: /spec/template/spec/terminationGracePeriodSeconds
+        value: 120
+  # Infrastructure-only access; do not activate staged application namespaces.
+  - target:
+      kind: NetworkPolicy
+      name: tof-prediction-adapter
+    patch: |-
+      - op: replace
+        path: /spec/ingress/0/from
+        value:
+          - podSelector:
+              matchLabels:
+                tof-prediction-client: "true"
   - target:
       kind: Namespace
       name: tof

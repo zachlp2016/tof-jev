@@ -109,7 +109,10 @@ class BoundaryMiddleware:
             response = JSONResponse(
                 error_body(AdapterError(code, message, status_code, retryable), request_id),
                 status_code=status_code,
-                headers={"WWW-Authenticate": "Bearer"} if status_code == 401 else None,
+                headers={
+                    **({"WWW-Authenticate": "Bearer"} if status_code == 401 else {}),
+                    **({"Retry-After": "1"} if retryable else {}),
+                },
             )
             await response(scope, receive, wrapped_send)
 
