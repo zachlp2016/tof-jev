@@ -191,6 +191,35 @@ async def test_versioned_profiles_are_executable_and_have_stable_schema_hashes()
 
 
 @pytest.mark.parametrize(
+    ("profile_key", "question_count"),
+    [
+        ("security.data_readiness.v1", 10),
+        ("volatility.interpretation.v1", 8),
+        ("portfolio.risk_review.v1", 10),
+        ("market.event_impact.v1", 8),
+        ("scenario.assessment.v1", 8),
+    ],
+)
+async def test_parallax_finance_profiles_are_bounded_and_executable(
+    profile_key, question_count
+):
+    async with api() as client:
+        profiles = (await client.get("/v1/profiles", headers=AUTH)).json()["profiles"]
+        response = await client.post(
+            "/v1/decisions",
+            json={"state": "Captured Parallax state", "decision_key": profile_key},
+            headers=AUTH,
+        )
+
+    assert len(profiles[profile_key]["questions"]) == question_count
+    assert response.status_code == 200
+    assert set(response.json()["answers"]) == set(profiles[profile_key]["questions"])
+    assert response.json()["decision_key"] == profile_key
+    assert response.json()["advisory_only"] is True
+    assert response.json()["calibrated"] is False
+
+
+@pytest.mark.parametrize(
     "payload",
     [
         {"state": PRIVATE},

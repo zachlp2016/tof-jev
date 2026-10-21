@@ -82,6 +82,11 @@ Built-in advisory profiles:
 - `research.evidence_screen.v1`: relevance, independence, verification priority.
 - `provider.progress.v1`: progress, repetition, blockage, insufficient context.
 - `job.complexity.v1`: complexity and vision requirements.
+- `security.data_readiness.v1`: identity, source freshness, input coverage, and review priority.
+- `volatility.interpretation.v1`: relative volatility level, model disagreement, and surface quality.
+- `portfolio.risk_review.v1`: concentration, diversification, unmodeled weight, and review priority.
+- `market.event_impact.v1`: target relevance, direction, magnitude, horizon, and transmission channel.
+- `scenario.assessment.v1`: relative scenario support and uncertainty without calibrated probabilities.
 
 Normalized answers contain `type`, `value`, and, where applicable, `probabilities`, `confidence`, and `confidence_kind`. Scores are fractional zero-based rubric indices, not a universal 0–1 scale. Noul is a model assessment in [0,1]. Laya entropy confidence and Jev confidence retain different labels. Nothing in this release declares those estimates calibrated.
 
