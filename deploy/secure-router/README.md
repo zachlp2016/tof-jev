@@ -14,12 +14,12 @@ Trusted local client on secure.techoverfl.com (192.168.20.41)
     -> Laya english at 192.168.10.207:8084
 ```
 
-The adapter remains the existing single-replica deployment at image digest
-`sha256:92419f223f323901bfe44b569f68dfce4b527ddcfa4718f91f771b91a2fa97c1`
-(source `c0ff8c354594006974c4d72b0488178284ef1b4e`). Its live ConfigMap
-already sets shared inference capacity to four. This deployment uses the
-existing service credential and does not activate separate consumer accounts,
-new profiles, cross-namespace access, or an application integration.
+The single-replica adapter is pinned to image digest
+`sha256:375fdd02c665c2d2e32fa9d575fb73961d124f057f07dcf5c0d7a7000c38054a`
+(runtime source `109dc0697f6eeda957ac3cc6c7629c78c347b769`). Its shared capacity
+is four; authenticated caps are `router=4` and `operations=1`, with no reserved
+slot. `Recreate` prevents overlapping process-local pools. No new profiles,
+cross-namespace access, or application integration is activated.
 
 Both tunnel listeners bind `127.0.0.1`. Kubernetes access uses Manatree's
 existing authenticated control-plane configuration. The tunnel uses the
@@ -44,8 +44,8 @@ On Secure:
 - `/home/zachlp2016/tof-model-router/tof-model-router.env`:
   `ROUTER_JEV_ENABLED=true`, `ROUTER_JEV_URL=http://127.0.0.1:19421`,
   `ROUTER_JEV_CAPACITY=4`, `ROUTER_JEV_TIMEOUT_SECONDS=95`.
-- The credential is read from the existing mode-0600
-  `/home/zachlp2016/tof-jev/.local/adapter-client-token`; never put it in source
+- The named Router credential is read from the mode-0600
+  `/home/zachlp2016/tof-jev/.local/isolation-20261021/router-token`; never put it in source
   or request logs.
 
 Install only after verifying both documented host identities and the
@@ -69,7 +69,7 @@ hardware descriptions contain unquoted spaces. No Nginx reload is needed.
 The canonical AI gateway inventory comment records the active typed lane;
 Jev is intentionally absent from its OpenAI model rows. Regeneration produced
 byte-identical Nginx routing files. The repository and installed inventory
-hash is `014673cbc542a427c03739d4f2277803920c8c857a7758e52a352176c7fb9c66`;
+hash is `bc7adf8fe142dc24d95a90c19b310e6844635980c86b5648f59450b3cbb84a9a`;
 the Operations snapshot reported that hash and matching Router source hash
 after activation.
 
@@ -148,7 +148,7 @@ Repeat this bounded run on Secure:
 ```sh
 timeout --signal=TERM --kill-after=3s 180s python3 deploy/secure-router/benchmark.py \
   --seconds 10 --output /secure/evidence/path/results.json \
-  --adapter-key-file /home/zachlp2016/tof-jev/.local/adapter-client-token
+  --adapter-key-file /home/zachlp2016/tof-jev/.local/isolation-20261021/router-token
 ```
 
 The optional key-file argument enables direct-adapter control tiers. Router
@@ -175,3 +175,14 @@ do not multiply the process-local quota. No capacity is reserved: Router may
 occupy all four slots while operations is idle. The standard routed smoke uses
 four concurrent calls. See `isolation.py` for Router-only and mixed-consumer
 qualification, including backpressure when the shared pool is full.
+
+Final live qualification at 16:32 UTC: four Router callers completed 256
+ten-question requests in 8.122 seconds (31.518 requests/s, about 315.18
+questions/s), p95 128.772 ms, no errors. Three Router plus one operations caller
+completed 256 requests with no errors and observed exactly four active calls.
+Two operations callers peaked at one active call and rejected eight attempts.
+Four Router plus two operations callers completed 255 requests and rejected
+16 attempts with 503/Retry-After. No sampler, transport, answer-shape, fixture
+answer, or provenance failures occurred. This short run qualifies admission,
+not long-term throughput or calibrated model quality. Complete evidence is in
+`deployment-staging/jev-infrastructure-isolation-20261021/README.md` on Secure.

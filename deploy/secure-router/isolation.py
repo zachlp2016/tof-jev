@@ -73,7 +73,7 @@ def main():
             assert result["status"] == 200 and result["correct"] and result["provenance_ok"]
         finally:
             warm.close()
-        for router_callers, operations_callers in ((4, 0), (3, 1), (4, 2)):
+        for router_callers, operations_callers in ((4, 0), (3, 1), (0, 2), (4, 2)):
             stop = threading.Event()
             barrier = threading.Barrier(router_callers + operations_callers + 1)
             timing = {}
