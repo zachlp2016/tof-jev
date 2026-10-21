@@ -1,0 +1,37 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../namespace.yaml
+  - ../configmap.yaml
+  - ../deployment.yaml
+  - ../service.yaml
+  - ../networkpolicy.yaml
+  - baremetal-laya-egress.yaml
+
+images:
+  - name: tof-prediction-adapter
+    newName: ghcr.io/zachlp2016/tof-jev
+    newTag: sha-c0ff8c354594006974c4d72b0488178284ef1b4e
+
+replicas:
+  - name: tof-prediction-adapter
+    count: 1
+
+patches:
+  - target:
+      kind: ConfigMap
+      name: tof-prediction-adapter
+    patch: |-
+      - op: replace
+        path: /data/TOF_LAYA_BASE_URL
+        value: http://192.168.10.207:8084
+      - op: add
+        path: /data/TOF_LAYA_MODEL
+        value: english
+      - op: add
+        path: /data/TOF_LAYA_MODEL_REVISION
+        value: 55cf4c4ebb4ebe31b2550e8bdf3bd21b99753851
+      - op: add
+        path: /data/TOF_REQUEST_TIMEOUT_SECONDS
+        value: "90"

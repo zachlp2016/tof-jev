@@ -15,3 +15,13 @@ V100, Laya's systemd unit, or its checkpoint cache.
 Do not use the stock Kubernetes NetworkPolicy for this bare-metal endpoint. If
 the adapter is placed off-host, protect the upstream hop with TLS or an
 authenticated tunnel before sending non-public state.
+
+## Kubernetes overlay
+
+`deploy/kubernetes/node-host-2-v100` deploys one stateless adapter replica using
+the immutable GHCR image produced from commit `c0ff8c3`. It configures the
+reviewed English checkpoint revision and adds narrowly scoped egress to
+`192.168.10.207:8084`; the base policy continues to provide DNS egress and
+label-gated ingress. Create `tof-prediction-adapter-secrets` out of band before
+applying the overlay. The deployment does not use a PVC or service-account
+token.

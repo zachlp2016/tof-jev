@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tof-prediction-adapter-baremetal-laya
+  namespace: tof
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: tof-prediction-adapter
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 192.168.10.207/32
+      ports:
+        - protocol: TCP
+          port: 8084

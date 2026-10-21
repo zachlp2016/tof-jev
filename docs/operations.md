@@ -51,6 +51,13 @@ kubectl apply -f deploy/kubernetes/networkpolicy.yaml
 
 Check exact filenames before use; the secret template and hosted-egress policy are deliberately separate opt-ins. Do not apply the directory recursively. Supply the local backend token in the Secret if enabled. Network policy admits only same-namespace client pods labeled `tof-prediction-client=true`, allows DNS, and allows the separately deployed local Laya pod label. Readiness probes send Host `localhost` to satisfy host protection.
 
+The `deploy/kubernetes/node-host-2-v100` Kustomize overlay instead permits only
+the bare-metal Laya address `192.168.10.207:8084`, selects an immutable GHCR
+image, and runs one replica. Its Secret remains deliberately out of source
+control. Callers still require the `tof-prediction-client=true` label in the
+`tof` namespace unless ingress policy is explicitly extended for another
+namespace.
+
 Hosted mode additionally requires pod label `tof-prediction-hosted=enabled`, explicit hosted settings/secrets, and the optional hosted egress policy. The stock policy permits public IPv4 TCP/443 rather than enforcing a domain allowlist. Use a cluster-specific FQDN policy or controlled egress proxy if the destination must be restricted to TypeSafe. A NetworkPolicy-enforcing CNI is required for these controls to take effect.
 
 The runtime uses UID/GID 10001, a read-only root filesystem, temporary `/tmp`, dropped capabilities and no privilege escalation. There are no host mounts or Docker socket mounts.
